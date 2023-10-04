@@ -1,50 +1,99 @@
-import React, { useState } from 'react';
-import PropTypes from 'prop-types';
-import { FormWrapper, Label, Input, Button } from './ContactForm.styled';
+import { FcAddDatabase } from 'react-icons/fc';
+import { Formik, Field, Form, ErrorMessage } from 'formik';
+import { object, string } from 'yup';
+import { useSelector, useDispatch } from 'react-redux';
+import { selectContacts } from 'redux/selectors';
+import { addContact } from 'redux/operations';
+import toast from 'react-hot-toast';
+import css from './ContactForm.module.css';
 
-function ContactForm({ onAddContact }) {
-  const [formData, setFormData] = useState({ name: '', number: '' });
 
-  const handleChange = event => {
-    const { name, value } = event.target;
-    setFormData(prevData => ({ ...prevData, [name]: value }));
+const regexName = /^[a-zA-Z]+([' -][a-zA-Z ]+)*$|^[a-zA-ZąćęłńóśźżĄĆĘŁŃÓŚŹŻ]+([' -][a-zA-ZąćęłńóśźżĄĆĘŁŃÓŚŹŻ ]+)*$/
+
+const regexNumber =
+  /\+?\d{1,4}?[-.\s]?\(?\d{1,3}?\)?[-.\s]?\d{1,4}[-.\s]?\d{1,4}[-.\s]?\d{1,9}/;
+
+
+const schema = object({
+  name: string()
+    .matches(regexName, 'Name is not valid')
+    .min(2, 'Name too short')
+    .max(15, 'Name too long')
+    .trim()
+    .required('Name is required'),
+  number: string()
+    .matches(regexNumber, 'Phone number is not valid')
+    .min(5, 'Phone number too short')
+    .max(15, 'Phone number too long')
+    .trim()
+    .required('Phone number is required'),
+});
+
+export const ContactForm = () => {
+  const contacts = useSelector(selectContacts);
+  const dispatch = useDispatch();
+
+
+  const initialValues = {
+    name: '',
+    number: '',
   };
 
-  const handleSubmit = event => {
-    event.preventDefault();
-    onAddContact(formData.name, formData.number);
-    setFormData({ name: '', number: '' });
+
+  const formSubmitHandler = data => {
+   
+    if (contacts.some(contact => contact.name === data.name)) {
+      toast.error(`${data.name} is already in contacts.`);
+      return;
+    }
+    dispatch(
+      addContact({ name: data.name, phone: data.number }) 
+    );
+  };
+
+  const handleSubmit = (values, { resetForm }) => {
+    formSubmitHandler(values);
+    resetForm();
   };
 
   return (
-    <FormWrapper onSubmit={handleSubmit}>
-      <Label>
-        Name
-        <Input
-          type="text"
-          name="name"
-          value={formData.name}
-          onChange={handleChange}
-          required
-        />
-      </Label>
-      <Label>
-        Number
-        <Input
-          type="tel"
+    <Formik
+      initialValues={initialValues}
+      onSubmit={handleSubmit}
+      validationSchema={schema}
+    >
+      <Form className={css.form_wrapper}>
+        <FcAddDatabase size={'35px'} className={css.icon} />
+        <label className={css.label}>
+          Name
+          <Field
+            className={css.input}
+            name="name"
+            title="Name may contain only letters, apostrophe, dash and spaces. For example Adrian, Jacob Mercer, Charles de Batz de Castelmore d'Artagnan"
+          />
+          <ErrorMessage
+            component="div"
+            className={css.error_name}
+            name="name"
+          />
+        </label>
+        <label className={css.label}>
+          Number
+          <Field
+            className={css.input}
+            name="number"
+            title="Phone number must be digits and can contain spaces, dashes, parentheses and can start with +"
+          />
+        </label>
+        <ErrorMessage
+          component="div"
+          className={css.error_number}
           name="number"
-          value={formData.number}
-          onChange={handleChange}
-          required
         />
-      </Label>
-      <Button type="submit">Add Contact</Button>
-    </FormWrapper>
+        <button className={css.button_add} type="submit">
+          Add contact
+        </button>
+      </Form>
+    </Formik>
   );
-}
-
-ContactForm.propTypes = {
-  onAddContact: PropTypes.func.isRequired,
 };
-
-export default ContactForm;

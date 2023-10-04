@@ -1,41 +1,30 @@
-import React from 'react';
-import PropTypes from 'prop-types';
+import { ContactListItem } from 'components/ContactListItem/ContactListItem';
+import { useSelector } from 'react-redux';
 import {
-  ContactListWrapper,
-  ContactListItem,
-  ContactName,
-  ContactNumber,
-  DeleteButton,
-} from './ContactList.styled'; // Importuj style z ContactList.styled.js
+  selectVisibleContacts,
+  selectContactsCount,
+  selectIsLoading,
+  selectError,
+} from 'redux/selectors';
 
-function ContactList({ contacts, onDeleteContact }) {
+import css from './ContactList.module.css';
+
+export const ContactList = () => {
+  const filteredContacts = useSelector(selectVisibleContacts);
+  const count = useSelector(selectContactsCount);
+  const isLoading = useSelector(selectIsLoading);
+  const error = useSelector(selectError);
   return (
-    <ContactListWrapper>
-      {contacts.map(contact => (
-        <ContactListItem key={contact.id}>
-          <ContactName>{contact.name}:</ContactName> <ContactNumber>{contact.number}</ContactNumber>
-          <DeleteButton
-            type="button"
-            onClick={() => onDeleteContact(contact.id)}
-          >
-            Delete
-          </DeleteButton>
-        </ContactListItem>
-      ))}
-    </ContactListWrapper>
+    <ul className={css.list}>
+      {!count && !isLoading && !error ? (
+        <p className={css.emptyMessage}>
+          The Phonebook is empty. Add your first contact.
+        </p>
+      ) : (
+        filteredContacts.map(contact => (
+          <ContactListItem key={contact.id} contact={contact} />
+        ))
+      )}
+    </ul>
   );
-}
-
-ContactList.propTypes = {
-  contacts: PropTypes.arrayOf(
-    PropTypes.shape({
-      id: PropTypes.string.isRequired,
-      name: PropTypes.string.isRequired,
-      number: PropTypes.string.isRequired,
-    })
-  ).isRequired,
-  onDeleteContact: PropTypes.func.isRequired,
 };
-
-export default ContactList;
-
